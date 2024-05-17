@@ -64,6 +64,8 @@ exports.login = async (req, res) => {
       res.status(200).json({
         success: true,
         message: "Account logged in successfully",
+        account: account.id,
+        token: accessToken
       });
     }
   } catch (error) {
@@ -114,7 +116,7 @@ exports.requestRefreshToken = async (req, res) => {
       res.status(200).json({
         status: true,
         message: "Created Successfully!!!",
-        accessToken: newAccessToken,
+        accessToken: newAccessToken
       });
     });
   } catch (error) {
@@ -125,4 +127,14 @@ exports.requestRefreshToken = async (req, res) => {
   }
 };
 
-// exports.getAccount = async (req, res) => {};
+exports.getAccount = async (req, res) => {
+  try {
+
+    const account = await AccountModel.find();
+
+    res.status(200).json(account);
+
+  } catch (error) {
+    res.status(500).json(error);
+  }
+};
