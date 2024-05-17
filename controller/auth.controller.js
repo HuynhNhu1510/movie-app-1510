@@ -130,7 +130,13 @@ exports.requestRefreshToken = async (req, res) => {
 exports.getAccount = async (req, res) => {
   try {
 
-    const account = await AccountModel.find();
+    const accountId = req.params.id;
+
+    const account = await AccountModel.findById(accountId);
+
+    if (!account) {
+      return res.status(404).json({ error: 'Acount not found' });
+    }
 
     res.status(200).json(account);
 

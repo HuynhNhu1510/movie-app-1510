@@ -3,9 +3,8 @@ const mongoose = require("mongoose");
 const ListSchema = new mongoose.Schema({
 
     accound_id: {
-        type: Schema.Types.ObjectId,
-        unique: true,
-        required: true,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "account",
     },
 
     slug: {
@@ -23,7 +22,8 @@ const ListSchema = new mongoose.Schema({
         type: String,
         default: "",
     },
-}, {timestamps: true}
+}, 
+{timestamps: true}
 );
 
 const ListModel = mongoose.model("list", ListSchema);   

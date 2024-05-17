@@ -4,6 +4,7 @@ const body_parser = require("body-parser");
 
 const connectDB = require("./db/connect_db");
 const authRoute = require("./routes/auth.route");
+const listRoute = require("./routes/list.route");
 
 const app = express();
 express.urlencoded({ extended: true });
@@ -22,6 +23,9 @@ const PORT = process.env.PORT || 3000;
  
 // route -  authentication
 app.use("/api", authRoute);
+
+// route - list
+app.use("/api/list", listRoute);
 
 
 connectDB();
