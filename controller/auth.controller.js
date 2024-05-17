@@ -4,7 +4,6 @@ const { generateAccessToken, generateRefreshToken } = require("../utils/jwt");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-
 // register
 exports.registered = async (req, res) => {
   try {
@@ -27,11 +26,10 @@ exports.registered = async (req, res) => {
       phone,
       password: hash,
     }).save();
+
     const accessToken = generateAccessToken(account);
 
-    res
-      .status(200)
-      .json({ success: true, message: "Create successfully", accessToken: accessToken });
+    res.status(200).json({ success: true, message: "Create successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -61,12 +59,11 @@ exports.login = async (req, res) => {
       account.refreshToken = refreshTokens;
       await account.save();
 
-      const { password, ...others } = account._doc;
+      // const { password, ...others } = account._doc;
 
       res.status(200).json({
         success: true,
         message: "Account logged in successfully",
-        account: { ...others },
       });
     }
   } catch (error) {
@@ -127,3 +124,5 @@ exports.requestRefreshToken = async (req, res) => {
     });
   }
 };
+
+exports.getAccount = async (req, res) => {};

@@ -27,7 +27,7 @@ const AccountSchema = new mongoose.Schema(
 
     refreshToken: {
       type: String,
-      unique: true
+      unique: true,
     },
   },
   { timestamps: true }

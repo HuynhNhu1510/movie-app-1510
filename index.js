@@ -21,6 +21,7 @@ app.use("/api", authRoute);
 
 
 
+
 connectDB();
 app.listen(PORT, (error) => {
   if (error) {
