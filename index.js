@@ -8,18 +8,17 @@ const authRoute = require("./routes/auth.route");
 const app = express();
 app.use(body_parser.json());
 app.use(express.json());
+// get var from .env file
+dotenv.config();  
 
 const PORT = process.env.PORT || 3000;
 
 
-// get var from .env file
-dotenv.config();  
+
 
  
 // route -  authentication
 app.use("/api", authRoute);
-
-
 
 
 connectDB();
@@ -27,5 +26,5 @@ app.listen(PORT, (error) => {
   if (error) {
     console.log(error);
   }
-    console.log("SERVER IS RUNNING AT PORT 3000");
+    console.log(`SERVER IS RUNNING AT PORT ${PORT}`);
 });
