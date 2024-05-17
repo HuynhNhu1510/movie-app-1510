@@ -6,8 +6,11 @@ const connectDB = require("./db/connect_db");
 const authRoute = require("./routes/auth.route");
 
 const app = express();
+express.urlencoded({ extended: true });
+
 app.use(body_parser.json());
 app.use(express.json());
+
 // get var from .env file
 dotenv.config();  
 
