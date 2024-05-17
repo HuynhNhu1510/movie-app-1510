@@ -13,7 +13,7 @@ route.post("/login", authController.login);
 // POST - refresh 
 route.post("/refresh", authController.requestRefreshToken);
 
-// GET - user
-route.get("/:id", authController.getAccount);
+// // GET - user
+// route.get("/:id", authController.getAccount);
 
 module.exports = route;

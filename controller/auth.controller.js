@@ -125,4 +125,4 @@ exports.requestRefreshToken = async (req, res) => {
   }
 };
 
-exports.getAccount = async (req, res) => {};
+// exports.getAccount = async (req, res) => {};
