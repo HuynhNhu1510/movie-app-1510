@@ -13,7 +13,7 @@ exports.registered = async (req, res) => {
     const existAccount = await AccountModel.findOne({ email });
 
     if (existAccount) {
-      return res.status(400).json({ msg: "Email address already exists" });
+      return res.status(400).json({ message: "Email address already exists" });
     }
 
     // hash
@@ -48,7 +48,7 @@ exports.login = async (req, res) => {
     const validPassword = await bcrypt.compare(req.body.password, account.password);
 
     if (!validPassword) {
-      res.status(404).json("Invalid password! Please enter again");
+      res.status(404).json({ success: false, message: "Invalid password! Please enter again" });
     }
 
     // login success
@@ -65,7 +65,7 @@ exports.login = async (req, res) => {
         success: true,
         message: "Account logged in successfully",
         id: account.id,
-        token: accessToken
+        token: accessToken,
       });
     }
   } catch (error) {
@@ -85,61 +85,88 @@ exports.requestRefreshToken = async (req, res) => {
   if (!authorizationHeader) {
     return res.status(401).json({
       status: false,
-      message: "Token not found!!!",
+      message: "Authorization header missing",
     });
   }
 
   //split Bearer header
-  const refreshTokens = authorizationHeader.split(" ")[1];
-
-  //If token does not exist, send error message
-  if (!account.refreshToken.includes(refreshTokens)) {
-    return res.status(403).json({
-      status: false,
-      message: "Invalid refresh token!!!",
-    });
-  }
+  const refreshToken = authorizationHeader.split(" ")[1];
 
   try {
-    jwt.verify(refreshTokens, process.env.REFRESH_KEY, (error, account) => {
-      if (error) {
-        console.log(error);
-      }
 
-      account.refreshToken = account.refreshToken.filter((token) => token !== refreshToken);
+    // Verify the refresh token
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_KEY);
 
-      const newAccessToken = generateAccessToken(account);
-      const newRefreshToken = generateRefreshToken(account);
+    // Fetch the user account associated with the refresh token
+    const account = await fetchAccountByRefreshToken(refreshToken);
 
-      refreshTokens.push(newRefreshToken);
+    if(!account) {
+      return res.status(403).json({success: false, message: "Invalid refresh token"});
+    }
 
-      res.status(200).json({
-        status: true,
-        message: "Created Successfully!!!",
-        accessToken: newAccessToken
-      });
-    });
+    // optionally, update the account to store the new refresh token.
+    const newRefreshToken = generateRefreshToken(account);
+    await updateAccountRefreshToken(account, newRefreshToken);
+
+    // generate a new access token
+    const newAccessToken = generateAccessToken(account);
+
+    res.status(200).json({
+      accessToken: newAccessToken, 
+      refreshToken: newRefreshToken}); //Send the new refresh token back
+
+  }
+  catch (error) {
+
+    if(error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({success: false, message: "Refresh token expired"});
+    } else if(error instanceof jwt.JsonWebTokenError) {
+      return res.status(403).json({success: false, message: "Invalid refresh token"});
+    }
+
+    console.error(error);
+    res.status(500).json({success: false, message: "Internal server error"});
+
+  }
+};
+
+// finding account information in db based on the provided refreshToken.
+exports.fetchAccountByRefreshToken = async (refreshToken) => {
+  try {
+
+    const account = await AccountModel.findOne({ refreshToken });
+    return account;
+
+    // find account with corresponding refreshtoken
+
   } catch (error) {
-    res.status(403).json({
-      status: false,
-      message: "Invalid Token!!!",
-    });
+    console.error(error);
+    throw error; // return null if not exists
+  }
+};
+
+// update refresh token 
+exports.updateAccountRefreshToken = async(account, newRefreshToken) => {
+  try {
+    await AccountModel.findByIdAndUpdate(account.id, { refreshToken: newRefreshToken});
+  }
+  catch (error) {
+    console.error(error);
+    throw error;
   }
 };
 
 exports.getAccount = async (req, res) => {
   try {
-
     const accountId = req.params.id;
 
     const account = await AccountModel.findById(accountId);
 
     if (!account) {
-      return res.status(404).json({ error: 'Acount not found' });
+      return res.status(404).json({ error: "Acount not found" });
     }
 
     res.status(200).json(account);
-
   } catch (error) {
     res.status(500).json(error);
   }
