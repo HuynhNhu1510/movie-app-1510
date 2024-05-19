@@ -9,9 +9,10 @@ module.exports = async function (req, res, next) {
     });
   }
 
-  try {
+  const accessToken = token.split(" ")[1];
 
-    await jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+  try {
+    await jwt.verify(accessToken, process.env.SECRET_KEY, (err, decoded) => {
       if (err) {
         res.status(401).json({
           msg: "Invalid token",
@@ -21,8 +22,7 @@ module.exports = async function (req, res, next) {
         next();
       }
     });
-  } 
-  catch (err) {
+  } catch (err) {
     console.log("Something went wrong with middleware " + err);
     res.json(500).json({
       msg: "Server error!!",

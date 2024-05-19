@@ -1,4 +1,5 @@
 const ListModel = require("../model/list.model");
+const mongoose = require("mongoose");
 
 exports.createList = async (req, res) => {
   try {
@@ -25,21 +26,20 @@ exports.createList = async (req, res) => {
 
 exports.getListByAccountID = async (req, res) => {
   try {
-    D;
-    const accountID = req.params.account_id;
+    const accountId = req.params.account_id;
 
-    // Validate ObjectId (Tùy chọn, nhưng nên có)
-    if (!mongoose.Types.ObjectId.isValid(accountID)) {
-      return res.status(400).json({ success: false, message: "Invalid account ID" });
-    }
-
-    const list = await ListModel.findOne({ account_id: accountID });
+      const list = await ListModel.find({ account_id: accountId });
 
     if (!list) {
       return res.status(400).json({ success: false, message: "Acount not found" });
     }
 
+    if (list.length === 0) {
+      return res.status(404).json({ success: false, message: "No lists found for this account" });
+    }
+
     res.status(200).json(list);
+    
   } catch (error) {
     console.log(error);
     res.status(500).json({ success: false, message: error });
@@ -47,5 +47,23 @@ exports.getListByAccountID = async (req, res) => {
 };
 
 exports.deleteList = async (req, res) => {
-   
+  try {
+
+    const accountId = req.params.account_id;
+    const slug = req.params.slug;
+
+    const list = await ListModel.findOneAndDelete({
+      account_id: accountId,
+      slug: slug
+    });
+
+    if (!list) {
+      return res.status(401).json({ success: false, message: "List not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Deleted successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 };
