@@ -80,12 +80,12 @@ exports.login = async (req, res) => {
 exports.requestRefreshToken = async (req, res) => {
   // take refresh token from user
   const authorizationHeader = req.headers.authorization;
-
+// 
   // If token is not provided, send error message
-  if (!authorizationHeader) {
+  if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
     return res.status(401).json({
       status: false,
-      message: "Authorization header missing",
+      message: "Authorization header missing or Invalid authorization header",
     });
   }
 
