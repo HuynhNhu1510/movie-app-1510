@@ -4,13 +4,12 @@ const auth = require("../middleware/auth");
 const listController = require("../controller/list.controller");
 
 // GET
-route.get("/:accountId", auth, listController.getListByAccountID);
+route.get("/:account_id", auth, listController.getListByAccountID);
 
 // POST
-
 route.post("/", auth, listController.createList);
 
 // DELETE
-route.delete("/:accountId/:slug", auth, listController.deleteList);
+route.delete("/:account_id/:slug", auth, listController.deleteList);
 
 module.exports = route;

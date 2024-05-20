@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const ListSchema = new mongoose.Schema({
 
-    accound_id: {
+    account_id: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "account",
     },

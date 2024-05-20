@@ -18,9 +18,6 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 
 
-
-
- 
 // route -  authentication
 app.use("/api", authRoute);
 

@@ -1,5 +1,5 @@
 const AccountModel = require("../model/account.model");
-
+const RefreshToken = require("../model/refresh_token.model");
 const { generateAccessToken, generateRefreshToken } = require("../utils/jwt");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -21,16 +21,18 @@ exports.registered = async (req, res) => {
     const hash = await bcrypt.hash(password, salt);
 
     // create new account
-    const account = new AccountModel({
+    const newAccount = await new AccountModel({
       email,
       phone,
       password: hash,
-    }).save();
+    });
+    
+    const account = await newAccount.save();
 
-    const accessToken = generateAccessToken(account);
-
-    res.status(200).json({ success: true, message: "Create successfully" });
-  } catch (error) {
+    res.status(200).json({ success: true, message: "Create successfully", account: account});
+  } 
+  catch (error) {
+    console.log(error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -54,21 +56,22 @@ exports.login = async (req, res) => {
     // login success
     if (account && validPassword) {
       const accessToken = generateAccessToken(account);
-      const refreshTokens = generateRefreshToken(account);
+      const refreshToken = generateRefreshToken(account);
 
-      account.refreshToken = refreshTokens;
-      await account.save();
+      await RefreshToken.create({token: refreshToken, account_id: account.id});
 
-      // const { password, ...others } = account._doc;
+      const {password, ...others} = account._doc;
 
-      res.status(200).json({
+      res.status(200).json({ 
         success: true,
-        message: "Account logged in successfully",
-        id: account.id,
-        token: accessToken,
+        message: "Logged in successfully",
+        accessToken,
+        ...others
       });
     }
-  } catch (error) {
+  } 
+  catch (error) {
+    console.log(error.message);
     res.status(500).json({
       success: false,
       message: "Internal Server Error!!",
@@ -78,81 +81,42 @@ exports.login = async (req, res) => {
 
 // refresh token
 exports.requestRefreshToken = async (req, res) => {
-  // take refresh token from user
-  const authorizationHeader = req.headers.authorization;
-// 
-  // If token is not provided, send error message
-  if (!authorizationHeader || !authorizationHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      status: false,
-      message: "Authorization header missing or Invalid authorization header",
+  
+  const {refreshToken} = req.body;
+
+  try {
+    
+    const refreshTokenDoc = await RefreshToken.findOne({token: refreshToken});
+
+    if(!refreshTokenDoc) {
+      return res.status(403).json({success: false, message: "Invalid refresh token or expired"});
+    }
+
+    jwt.verify(refreshToken, process.env.REFRESH_KEY, async(error, decoded) => {
+      if(error) {
+        await RefreshToken.deleteOne({token: RefreshToken});
+
+        return res. status(403).json({success: false, message: "Invalid refresh token or expired"});
+      }
+
+      const account = await AccountModel.findById(decoded.account_id);
+
+      if(!account) {
+        return res. status(404).json({success: false, message: "Cannot find any account"});
+      }
+
+      const newAccessToken = generateAccessToken(account);
+      const newRefreshToken = generateRefreshToken(account);
+      await RefreshToken.findByIdAndUpdate(refreshTokenDoc.id, {token: newRefreshToken});
+
+      res.status(200).json({accessToken: newAccessToken, refreshToken: newRefreshToken});
     });
-  }
-
-  //split Bearer header
-  const refreshToken = authorizationHeader.split(" ")[1];
-
-  try {
-
-    // Verify the refresh token
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_KEY);
-
-    // Fetch the user account associated with the refresh token
-    const account = await fetchAccountByRefreshToken(refreshToken);
-
-    if(!account) {
-      return res.status(403).json({success: false, message: "Invalid refresh token"});
-    }
-
-    // optionally, update the account to store the new refresh token.
-    const newRefreshToken = generateRefreshToken(account);
-    await updateAccountRefreshToken(account, newRefreshToken);
-
-    // generate a new access token
-    const newAccessToken = generateAccessToken(account);
-
-    res.status(200).json({
-      accessToken: newAccessToken, 
-      refreshToken: newRefreshToken}); //Send the new refresh token back
 
   }
   catch (error) {
+    console.log(error.message);
 
-    if(error instanceof jwt.TokenExpiredError) {
-      return res.status(401).json({success: false, message: "Refresh token expired"});
-    } else if(error instanceof jwt.JsonWebTokenError) {
-      return res.status(403).json({success: false, message: "Invalid refresh token"});
-    }
-
-    console.error(error);
-    res.status(500).json({success: false, message: "Internal server error"});
-
-  }
-};
-
-// finding account information in db based on the provided refreshToken.
-exports.fetchAccountByRefreshToken = async (refreshToken) => {
-  try {
-
-    const account = await AccountModel.findOne({ refreshToken });
-    return account;
-
-    // find account with corresponding refreshtoken
-
-  } catch (error) {
-    console.error(error);
-    throw error; // return null if not exists
-  }
-};
-
-// update refresh token 
-exports.updateAccountRefreshToken = async(account, newRefreshToken) => {
-  try {
-    await AccountModel.findByIdAndUpdate(account.id, { refreshToken: newRefreshToken});
-  }
-  catch (error) {
-    console.error(error);
-    throw error;
+    res.status(500).json({message: "Server error"});
   }
 };
 

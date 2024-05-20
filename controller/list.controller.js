@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 exports.createList = async (req, res) => {
   try {
     const list = await ListModel.create({
-      accound_id: req.account.id,
+      account_id: req.account.id,
       slug: req.body.slug,
       thumb_url: req.body.thumbUrl,
       name: req.body.name,
