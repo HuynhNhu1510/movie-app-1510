@@ -26,12 +26,11 @@ exports.registered = async (req, res) => {
       phone,
       password: hash,
     });
-    
+
     const account = await newAccount.save();
 
-    res.status(200).json({ success: true, message: "Create successfully", account: account});
-  } 
-  catch (error) {
+    res.status(200).json({ success: true, message: "Create successfully", account: account });
+  } catch (error) {
     console.log(error.message);
     res.status(500).json({ error: error.message });
   }
@@ -58,19 +57,18 @@ exports.login = async (req, res) => {
       const accessToken = generateAccessToken(account);
       const refreshToken = generateRefreshToken(account);
 
-      await RefreshToken.create({token: refreshToken, account_id: account.id});
+      await RefreshToken.create({ token: refreshToken, account_id: account.id });
 
-      const {password, ...others} = account._doc;
+      const { password, ...others } = account._doc;
 
-      res.status(200).json({ 
+      res.status(200).json({
         success: true,
         message: "Logged in successfully",
         accessToken,
-        ...others
+        ...others,
       });
     }
-  } 
-  catch (error) {
+  } catch (error) {
     console.log(error.message);
     res.status(500).json({
       success: false,
@@ -82,41 +80,44 @@ exports.login = async (req, res) => {
 // refresh token
 exports.requestRefreshToken = async (req, res) => {
   
-  const {refreshToken} = req.body;
+  const { refreshToken } = req.body;
 
   try {
-    
-    const refreshTokenDoc = await RefreshToken.findOne({token: refreshToken});
+    const refreshTokenDoc = await RefreshToken.findOne({ token: refreshToken });
 
-    if(!refreshTokenDoc) {
-      return res.status(403).json({success: false, message: "Invalid refresh token or expired"});
+    if (!refreshTokenDoc) {
+      return res.status(403).json({ success: false, message: "Invalid refresh token or expired" });
     }
 
-    jwt.verify(refreshToken, process.env.REFRESH_KEY, async(error, decoded) => {
-      if(error) {
-        await RefreshToken.deleteOne({token: RefreshToken});
+    jwt.verify(refreshToken, process.env.REFRESH_KEY, async (error, decoded) => {
 
-        return res. status(403).json({success: false, message: "Invalid refresh token or expired"});
+      if (error) {
+        const deleteResult = await RefreshToken.deleteOne({ token: refreshToken });
+
+        if (deleteResult.deletedCount === 0) {
+          console.warn("Refresh token not found for deletion:", refreshToken);
+        }
+        return res
+          .status(403)
+          .json({ success: false, message: "Invalid refresh token or expired" });
       }
 
       const account = await AccountModel.findById(decoded.account_id);
 
-      if(!account) {
-        return res. status(404).json({success: false, message: "Cannot find any account"});
+      if (!account) {
+        return res.status(404).json({ success: false, message: "Cannot find any account" });
       }
 
       const newAccessToken = generateAccessToken(account);
       const newRefreshToken = generateRefreshToken(account);
-      await RefreshToken.findByIdAndUpdate(refreshTokenDoc.id, {token: newRefreshToken});
+      await RefreshToken.findByIdAndUpdate(refreshTokenDoc.id, { token: newRefreshToken });
 
-      res.status(200).json({accessToken: newAccessToken, refreshToken: newRefreshToken});
+      res.status(200).json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
     });
-
-  }
-  catch (error) {
+  } catch (error) {
     console.log(error.message);
 
-    res.status(500).json({message: "Server error"});
+    res.status(500).json({ message: "Server error" });
   }
 };
 
