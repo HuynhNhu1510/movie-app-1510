@@ -54,12 +54,19 @@ exports.login = async (req, res) => {
 
     // login success
     if (account && validPassword) {
+      
+      // kiem tra refreshToken hien co
+      let existingRefreshToken = await RefreshToken.findOne({account_id: account.id});
+
+      // Tái sử dụng refreshToken nếu có
+      let refreshToken = existingRefreshToken ? existingRefreshToken.token : generateRefreshToken(account);
+
+      if(!existingRefreshToken) {
+        await RefreshToken.create({token: refreshToken, account_id: account.id});
+      }
+
       const accessToken = generateAccessToken(account);
-      const refreshToken = generateRefreshToken(account);
-
-      await RefreshToken.create({ token: refreshToken, account_id: account.id });
-
-      const { password, ...others } = account._doc;
+      const {password, ...others} = account._doc;
 
       res.status(200).json({
         success: true,
