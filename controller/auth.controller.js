@@ -64,7 +64,8 @@ exports.login = async (req, res) => {
       res.status(200).json({
         success: true,
         message: "Logged in successfully",
-        accessToken,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         ...others,
       });
     }
@@ -79,7 +80,7 @@ exports.login = async (req, res) => {
 
 // refresh token
 exports.requestRefreshToken = async (req, res) => {
-  
+
   const { refreshToken } = req.body;
 
   try {
@@ -102,7 +103,7 @@ exports.requestRefreshToken = async (req, res) => {
           .json({ success: false, message: "Invalid refresh token or expired" });
       }
 
-      const account = await AccountModel.findById(decoded.account_id);
+      const account = await AccountModel.findById(decoded.account.id);
 
       if (!account) {
         return res.status(404).json({ success: false, message: "Cannot find any account" });
