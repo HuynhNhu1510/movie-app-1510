@@ -49,26 +49,19 @@ exports.login = async (req, res) => {
     const validPassword = await bcrypt.compare(req.body.password, account.password);
 
     if (!validPassword) {
-      res.status(404).json({ success: false, message: "Invalid password! Please enter again" });
+      return res.status(401).json({ success: false, message: "Invalid password! Please enter again" });
     }
 
     // login success
     if (account && validPassword) {
-      
-      // kiem tra refreshToken hien co
-      let existingRefreshToken = await RefreshToken.findOne({account_id: account.id});
-
-      // Tái sử dụng refreshToken nếu có
-      let refreshToken = existingRefreshToken ? existingRefreshToken.token : generateRefreshToken(account);
-
-      if(!existingRefreshToken) {
-        await RefreshToken.create({token: refreshToken, account_id: account.id});
-      }
-
       const accessToken = generateAccessToken(account);
-      const {password, ...others} = account._doc;
+      const refreshToken = generateRefreshToken(account);
 
-      res.status(200).json({
+      await RefreshToken.create({ token: refreshToken, account_id: account.id });
+
+      const { password, ...others } = account._doc;
+
+      return res.status(200).json({
         success: true,
         message: "Logged in successfully",
         accessToken: accessToken,
@@ -84,7 +77,6 @@ exports.login = async (req, res) => {
     });
   }
 };
-
 // refresh token
 exports.requestRefreshToken = async (req, res) => {
 
@@ -120,7 +112,7 @@ exports.requestRefreshToken = async (req, res) => {
       const newRefreshToken = generateRefreshToken(account);
       await RefreshToken.findByIdAndUpdate(refreshTokenDoc.id, { token: newRefreshToken });
 
-      res.status(200).json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+      return res.status(200).json({ accessToken: newAccessToken, refreshToken: newRefreshToken });
     });
   } catch (error) {
     console.log(error.message);
