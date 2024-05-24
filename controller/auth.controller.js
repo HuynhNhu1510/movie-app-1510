@@ -43,7 +43,7 @@ exports.login = async (req, res) => {
 
     // check email if it exists
     if (!account) {
-      res.status(404).json("Invalid email! Please enter again");
+      return res.status(404).json("Invalid email! Please enter again");
     }
 
     const validPassword = await bcrypt.compare(req.body.password, account.password);
@@ -71,7 +71,7 @@ exports.login = async (req, res) => {
     }
   } catch (error) {
     console.log(error.message);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Internal Server Error!!",
     });
